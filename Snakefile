@@ -15,7 +15,9 @@ def get_all_samples(wildcards):
 rule target:
 	input:
 		expand("align/{sample}.bam.bai",
-               		sample=config["samples"])
+               		sample=config["samples"]),
+		expand("sniffles_calls/{sample}.log", 
+			sample=config["samples"])
 
 rule find_fastq:
 	input:
@@ -35,7 +37,7 @@ rule ngmlr_map:
 		"align/{sample}.bam"
 	log:
 		"align/{sample}.log"
-	conda: "../envs/ngmlr.yaml"
+	conda: "envs/ngmlr.yaml"
 	shell:
 		"zcat {input.fq} | ngmlr --presets ont -t 22 -r {input.REF} | \
 		 samtools sort -@ 8 -o {output} - 2> {log}"
@@ -48,12 +50,23 @@ rule samtools_index:
 	log:
 		"align/samtools_index/{sample}.log"
 	conda:
-		"../envs/samtools.yaml"
+		"envs/samtools.yaml"
 	shell:
 		"samtools index -@ 8 {input} 2> {log}"
 
 
-
+rule sniffles_call:
+	input:
+		bam = "align/{sample}.bam",
+		bai = "align/{sample}.bam.bai"
+	output:
+		"sniffles_calls/{sample}.vcf"
+	log:
+		"sniffles_calls/{sample}.log"
+	conda:
+		"envs/sniffles.yaml"
+	shell:
+		"sniffles --mapped_reads {input.bam} --vcf {output} --threads 22  2> {log}"
 
 
 
