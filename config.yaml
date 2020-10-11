@@ -3,3 +3,6 @@ samples:
         KS17S-311D_passMinQ7: /workdir/jcf236/nanopore_fastq/KS17S-311D_passMinQ7.fastq.gz
 
 genome: "/workdir/jcf236/round5_ref_dir/round5.curated.fasta"
+
+parameters:
+        survivor_distance: 500
