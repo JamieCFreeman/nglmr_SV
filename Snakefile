@@ -105,7 +105,6 @@ rule sniffles_genotype:
 		"sniffles --mapped_reads {input.bam} \
 			--vcf {output} \
 			--threads 22 \
-			--report_seq \
 			--cluster \
 			--Ivcf {input.ivcf} 2> {log}"
 
