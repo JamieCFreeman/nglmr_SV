@@ -1,0 +1,5 @@
+samples:
+        ISOCS-15C-3_passMinQ7: /workdir/jcf236/nanopore_fastq/ISOCS-15C-3_passMinQ7.fastq.gz
+        KS17S-311D_passMinQ7: /workdir/jcf236/nanopore_fastq/KS17S-311D_passMinQ7.fastq.gz
+
+genome: "/workdir/jcf236/round5_ref_dir/round5.curated.fasta"
