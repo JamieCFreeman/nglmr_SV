@@ -1,4 +1,6 @@
 
+import os
+import sys
 from snakemake.utils import min_version
 
 ##### set minimum snakemake version #####
@@ -16,7 +18,9 @@ rule target:
 	input:
 		expand("align/{sample}.bam.bai",
                		sample=config["samples"]),
-		expand("sniffles_genotypes_temp/{sample}.vcf",
+		expand("sniffles_genotypes/{sample}.vcf",
+			sample=config["samples"]),
+		expand("mosdepth/{sample}.mosdepth.global.dist.txt",
 			sample=config["samples"])		
 
 rule find_fastq:
@@ -71,8 +75,6 @@ rule sniffles_call:
 rule survivor:
 	input:
 		[f"sniffles_calls/{sample}.vcf" for sample in config["samples"]]
-#		 expand("sniffles_calls/{sample}.vcf",
-#                       sample=config["samples"]),
 	output:
 		vcf = "sniffles_combined/calls.vcf",
 		fofn = "sniffles_combined/samples.fofn"
@@ -108,4 +110,65 @@ rule sniffles_genotype:
 			--cluster \
 			--Ivcf {input.ivcf} 2> {log}"
 
+rule bcftools_reheader_sniffles:
+	"""Rule to be deleted as soon as ngmlr uses read groups correctly"""
+	input:
+		"sniffles_genotypes_temp/{sample}.vcf"
+	output:
+		vcf = "sniffles_genotypes/{sample}.vcf",
+		sample = "sniffles_genotypes/sample_{sample}.txt"
+	threads: 12
+	log:
+		"bcftools_reheader/{sample}.log"
+	conda: "envs/bcftools.yaml"
+	shell:
+		"""
+		echo {wildcards.sample} > {output.sample} &&
+		bcftools reheader -s {output.sample} {input} -o {output.vcf} 2> {log}
+		"""
+
+
+rule mosdepth_get:
+	input:
+		bam = "align/{sample}.bam", 
+		bai = "align/{sample}.bam.bai"
+	threads: 12
+	output:
+		"mosdepth/{sample}.mosdepth.global.dist.txt",
+		"mosdepth/{sample}.regions.bed.gz"
+	params:
+		windowsize = 500,
+		outdir = "mosdepth/{sample}"
+	log:
+		"mosdepth/mosdepth_{sample}.log"
+	conda: "envs/mosdepth.yaml"
+	shell:
+		"mosdepth --threads {threads} \
+			-n \
+			--by {params.windowsize} \
+			{params.outdir} {input.bam} 2> {log}"
+
+rule mosdepth_combine:
+	input:
+		[f"mosdepth/{sample}.regions.bed.gz" for sample in config["samples"]]
+	output:
+		"mosdepth/regions.combined.gz"
+	threads: 12
+	log:
+		"mosdepth/mosdepth_combine.log"
+	shell:
+		os.path.join(workflow.basedir, "scripts/combined_mosdepth.py") + \
+			" {input} -o {output} 2> {log}"
+
+rule mosdepth_global_plot:
+	input:
+		[f"mosdepth/{sample}.global.dist.txt" for sample in config["samples"]]
+	output:
+		"mosdepth_global_plot/global.html"
+	threads: 12
+	log:
+		"mosdepth/mosdepth_global_plot.log"
+	shell:
+		os.path.join(workflow.basedir, "scripts/mosdepth_plot-dist.py") + \
+			" {input} -o {output} 2> {log}"
  
