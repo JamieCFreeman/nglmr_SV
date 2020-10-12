@@ -20,8 +20,8 @@ rule target:
 			sample=config["samples"]),
 		expand("results/mosdepth/{sample}.mosdepth.global.dist.txt",
 			sample=config["samples"]),
-		"results/mosdepth/regions.combined.gz"
-#		"results/mosdepth_global_plot/global.html"
+		"results/mosdepth/regions.combined.gz",
+		"results/mosdepth_global_plot/global.html"
 
 rule find_fastq:
 	input:
@@ -79,6 +79,7 @@ rule sniffles_call:
 		"sniffles --mapped_reads {input.bam} --vcf {output} --threads {threads} -s {params.read_support}  2> {log}"
 
 rule survivor:
+	"""Use SURVIVOR to combine per sample VCFs to one merged VCF."""
 	input:
 		[f"results/sniffles_calls/{sample}.vcf" for sample in config["samples"]]
 	output:
@@ -101,6 +102,7 @@ rule survivor:
 		{params.minimum_size} {output.vcf} 2> {log}"
 
 rule sniffles_genotype:
+	"""Force Sniffles to call gt for each sample per variant in the combined VCF."""
 	input:
 		bam = "results/align/{sample}.bam",
 		ivcf = "results/sniffles_combined/calls.vcf"
@@ -134,10 +136,11 @@ rule bcftools_reheader_sniffles:
 		"""
 
 rule mosdepth_get:
+	"""Mosdepth calculates depth from a bam file."""
 	input:
 		bam = "results/align/{sample}.bam", 
 		bai = "results/align/{sample}.bam.bai"
-	threads: 12
+	threads: 4
 	output:
 		"results/mosdepth/{sample}.mosdepth.global.dist.txt",
 		"results/mosdepth/{sample}.regions.bed.gz"
@@ -152,7 +155,7 @@ rule mosdepth_get:
 			-n \
 			--by {params.windowsize} \
 			{params.outdir} {input.bam} 2> {log}"
-# not tested
+
 rule mosdepth_combine:
 	input:
 		[f"results/mosdepth/{sample}.regions.bed.gz" for sample in config["samples"]]
@@ -165,10 +168,9 @@ rule mosdepth_combine:
 		os.path.join(workflow.basedir, "scripts/combine_mosdepth.py") + \
 			" {input} -o {output} 2> {log}"
 
-# not tested
 rule mosdepth_global_plot:
 	input:
-		[f"results/mosdepth/{sample}.global.dist.txt" for sample in config["samples"]]
+		[f"results/mosdepth/{sample}.mosdepth.global.dist.txt" for sample in config["samples"]]
 	output:
 		"results/mosdepth_global_plot/global.html"
 	threads: 12
