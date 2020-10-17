@@ -146,7 +146,7 @@ rule mosdepth_get:
 		"results/mosdepth/{sample}.regions.bed.gz"
 	params:
 		windowsize = 500,
-		outdir = "mosdepth/{sample}"
+		outdir = "results/mosdepth/{sample}"
 	log:
 		"logs/mosdepth/mosdepth_{sample}.log"
 	conda: "envs/mosdepth.yaml"
