@@ -21,7 +21,9 @@ rule target:
 		expand("results/mosdepth/{sample}.mosdepth.global.dist.txt",
 			sample=config["samples"]),
 		"results/mosdepth/regions.combined.gz",
-		"results/mosdepth_global_plot/global.html"
+		"results/mosdepth_global_plot/global.html",
+		expand("results/svim_calls/{sample}/final_results.vcf",
+			sample=config["samples"])
 
 rule find_fastq:
 	input:
@@ -59,6 +61,22 @@ rule samtools_index:
 		"envs/samtools.yaml"
 	shell:
 		"samtools index -@ {threads} {input} 2> {log}"
+
+rule svim_call:
+	input:
+                bam = "results/align/{sample}.bam",
+                bai = "results/align/{sample}.bam.bai"
+	output:
+		"results/svim_calls/{sample}/final_results.vcf"
+	params:
+		outdir = "results/svim_calls/{sample}"
+	threads: 12
+	conda: "envs/svim.yaml"
+	log:
+		"logs/svim/{sample}.log"
+	shell:
+		"svim alignment --sample {wildcards.sample} \
+		{params.outdir}/ {input.bam} 2> {log}"
 
 
 rule sniffles_call:
